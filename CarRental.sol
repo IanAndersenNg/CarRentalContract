@@ -40,7 +40,7 @@ contract CarRental {
     function buyTokens() public payable {
         uint256 numTokens = msg.value / 1 ether;
         amountRaised += msg.value;
-        token.transferFrom(wallet, owner, numTokens);
+        token.transferFrom(wallet, msg.sender, numTokens);
         wallet.transfer(msg.value);
     }
 
