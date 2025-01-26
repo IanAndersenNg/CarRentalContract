@@ -38,6 +38,15 @@ contract CarRental {
         _;
     }
 
+    modifier carExists(string memory carPlate) {
+        Car storage car = carMap[carPlate];
+        // we check if car exists using the following requirement:
+        // in the code above, an empty car struct with default values is constructed
+        // so we can check if a valid car exists by checking its deposit and price
+        require(car.deposit > 0 && car.price > 0, "Car does not exist.");
+        _;
+    }
+
     // methods
     function buyTokens() public payable {
         uint256 numTokens = msg.value / 1 ether;
@@ -78,13 +87,14 @@ contract CarRental {
             );
         } 
     }
-    
-    function rentCar(string memory carPlate) external {
+
+    function isCarAvailable(string memory carPlate) public view carExists(carPlate) returns (bool) {
         Car storage car = carMap[carPlate];
-        // we check if car exists using the following requirement:
-        // in the code above, an empty car struct with default values is constructed
-        // so we can check if a valid car exists by checking its deposit and price
-        require(car.deposit > 0 && car.price > 0, "Car does not exist.");
+        return !car.isRented;
+    }
+    
+    function rentCar(string memory carPlate) external carExists(carPlate) {
+        Car storage car = carMap[carPlate];
         require(!car.isRented, "Car is already rented.");
         require(car.deposit + car.price <= token.balanceOf(msg.sender), "You have insufficient CRS balance to rent this car");
         
