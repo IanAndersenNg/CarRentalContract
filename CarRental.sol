@@ -25,6 +25,7 @@ contract CarRental {
     event CarAdded(string carPlate, uint256 deposit, uint256 price);
     event CarDetails(string carPlate, bool isDamaged, bool isRented, uint256 deposit, uint256 price, address renterAddress);
     event CarRented(string carPlate, address indexed renter);
+    event CarReturned(string carPlate, address indexed renter, bool isDamaged, uint256 refundAmount, uint256 damageFee);
 
     constructor(ERC20 _token) {
         owner = msg.sender;
@@ -107,5 +108,52 @@ contract CarRental {
         
         emit CarRented(carPlate, msg.sender);
     }
+
+
+
+    function damageCheck() private view returns (bool) {
+        uint random = uint(keccak256(abi.encodePacked(
+            block.timestamp,
+            block.difficulty,
+            msg.sender
+        ))) % 100; // A number between 0-99
+        return random < 7; // Set damage probability to 7%
+    }
+
+
+
+
+    function returnCar(string memory carPlate) external {
+        Car storage car = carMap[carPlate];
+
+        require(car.isRented, "Car is not rented.");
+        require(car.renterAddress == msg.sender, "You are not the renter of this car.");
+        bool isDamaged = damageCheck();
+
+        // Initialize the refund amount to the deposit
+        uint refundAmount = car.deposit;
+
+        if (isDamaged) {
+            // Calculate the damage fee as 50% of the rental price
+            uint damageFee = car.price / 2;
+            refundAmount -= damageFee;
+
+            token.transferFrom(msg.sender, wallet, damageFee);
+            car.isDamaged = true;
+            
+        } else {
+            car.isDamaged = false;
+        }
+
+        token.transfer(msg.sender, refundAmount);
+
+        car.isRented = false;          
+        car.renterAddress = address(0); 
+
+        emit CarReturned(carPlate, msg.sender, isDamaged, refundAmount, damageFee);
+    }
+
+
+
 
 }
