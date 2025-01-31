@@ -11,3 +11,4 @@ This project is the implementation of a smart contract for a car rental company,
 5. As account C, buy some tokens by interacting with the CarRental contract
 6. As account C, approve account B to spend some amount of the CARS token. This amount is for car renting purposes, so the amount must be larger than or equal to the total cost of renting the desired car (deposit + price)
 7. Attempt to rent a car by referring to its car plate. If the number of tokens is insufficient, an error should be thrown. Otherwise, the car becomes rented
+8. As account C, return the rented car by calling the `returnCar` function with the car plate. If the car is damaged, a damage fee (50% of the rental price) will be deducted, and account C must cover this fee. Otherwise, the full deposit is refunded. After returning, the car should no longer be rented
