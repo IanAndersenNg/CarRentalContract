@@ -114,7 +114,7 @@ contract CarRental {
     function damageCheck() private view returns (bool) {
         uint random = uint(keccak256(abi.encodePacked(
             block.timestamp,
-            block.difficulty,
+            block.prevrandao, // Replaced block.difficulty
             msg.sender
         ))) % 100; // A number between 0-99
         return random < 7; // Set damage probability to 7%
@@ -132,10 +132,11 @@ contract CarRental {
 
         // Initialize the refund amount to the deposit
         uint refundAmount = car.deposit;
+        uint damageFee = 0;
 
         if (isDamaged) {
             // Calculate the damage fee as 50% of the rental price
-            uint damageFee = car.price / 2;
+            damageFee = car.price / 2;
             refundAmount -= damageFee;
 
             token.transferFrom(msg.sender, wallet, damageFee);
