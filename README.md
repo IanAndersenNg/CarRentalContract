@@ -5,9 +5,9 @@ This project is the implementation of a smart contract for a car rental company,
 
 ### Roles
 
-account A -> owner address
-account B -> car rental contract address
-account C -> renter address
+account A -> owner address \
+account B -> car rental contract address \
+account C -> renter address \
 
 ### Execution Steps
 1. Using account A, deploy the CARS token and the CarRental contract (henceforth referred to as account B) using the address from the CARS token
