@@ -3,13 +3,13 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract CarRental {
-   struct Car {
-    string carPlate;
-    bool isDamaged;
-    bool isRented;
-    uint256 deposit;
-    uint256 price;
-    address renterAddress;
+    enum State {Available, Unavailable}
+    struct Car {
+        string carPlate;
+        State state;
+        uint256 deposit;
+        uint256 price;
+        address user;
    }
 
     // Global Variables
@@ -23,14 +23,15 @@ contract CarRental {
 
     // Events for logging
     event CarAdded(string carPlate, uint256 deposit, uint256 price);
-    event CarDetails(string carPlate, bool isDamaged, bool isRented, uint256 deposit, uint256 price, address renterAddress);
+    event CarDetails(string carPlate, State state, uint256 deposit, uint256 price, address user);
+
     event CarRented(string carPlate, address indexed renter);
     event CarReturned(string carPlate, address indexed renter, bool isDamaged, uint256 refundAmount, uint256 damageFee);
 
     constructor(ERC20 _token) {
         owner = msg.sender;
-        wallet = payable (owner); 
-        token = _token; 
+        wallet = payable (owner);
+        token = _token;
     }
 
     // modifiers
@@ -67,9 +68,8 @@ contract CarRental {
         newCar.carPlate = carPlate;
         newCar.deposit = deposit;
         newCar.price = price;
-        newCar.isRented = false;
-        newCar.isDamaged = false;
-        newCar.renterAddress = address(0);
+        newCar.state = State.Available;
+        newCar.user = owner;
         carPlates.push(carPlate);
         emit CarAdded(carPlate, deposit, price);
     }
@@ -79,33 +79,39 @@ contract CarRental {
         for (uint256 i = 0; i < carPlates.length; i++) {
             Car storage car = carMap[carPlates[i]];
             emit CarDetails(
-                car.carPlate, 
-                car.isDamaged, 
-                car.isRented, 
-                car.deposit, 
+                car.carPlate,
+                car.state,
+                car.deposit,
                 car.price,
-                car.renterAddress
+                car.user
             );
-        } 
+        }
     }
 
     function isCarAvailable(string memory carPlate) public view carExists(carPlate) returns (bool) {
         Car storage car = carMap[carPlate];
-        return !car.isRented;
+        bool isAvailable;
+        if(car.state == State.Available){
+            isAvailable = true;
+        }else if(car.state == State.Unavailable){
+            isAvailable = false;
+        }
+        return isAvailable;
+        // return !car.isRented;
     }
-    
+
     function rentCar(string memory carPlate) external carExists(carPlate) {
         Car storage car = carMap[carPlate];
-        require(!car.isRented, "Car is already rented.");
+        require(car.state == State.Available, "Car is already rented.");
         require(car.deposit + car.price <= token.balanceOf(msg.sender), "You have insufficient CRS balance to rent this car");
-        
+
         // transfer tokens (price + deposit) from the renter to the contract
         uint totalRental = car.deposit + car.price;
         token.transferFrom(msg.sender, wallet, totalRental);
-        
-        car.isRented = true;
-        car.renterAddress = msg.sender;
-        
+
+        car.state = State.Unavailable;
+        car.user = msg.sender;
+
         emit CarRented(carPlate, msg.sender);
     }
 
@@ -121,24 +127,26 @@ contract CarRental {
     function returnCar(string memory carPlate) external {
         Car storage car = carMap[carPlate];
 
-        require(car.isRented, "Car is not rented.");
-        require(car.renterAddress == msg.sender, "You are not the renter of this car.");
+        // require(car.isRented, "Car is not rented.");
+        require(car.user == msg.sender, "You are not the renter of this car.");
+
         bool isDamaged = damageCheck();
 
         uint refundAmount = car.deposit;
         uint damageFee = 0;
 
         // if car is damaged, reduce the refunded amount and return isDamaged back to false
-        // damage fee is 50% of the car price 
+        // damage fee is 50% of the car price
         if (isDamaged) {
             damageFee = car.price / 2;
             refundAmount -= damageFee;
-            car.isDamaged = false;    
+        }else{
+            car.state = State.Available;
         }
 
         token.transferFrom(wallet, msg.sender, refundAmount);
-        car.isRented = false;          
-        car.renterAddress = address(0); 
+        car.user = owner;
+
 
         emit CarReturned(carPlate, msg.sender, isDamaged, refundAmount, damageFee);
     }
