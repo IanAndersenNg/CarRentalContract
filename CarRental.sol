@@ -61,7 +61,7 @@ contract CarRental {
         uint256 deposit,
         uint256 price
     ) external onlyOwner {
-        require(deposit > 0 && price > 0, "Car must have a deposit and price.");
+        require(price > 2 && deposit > price / 2, "Car deposit must be larger than 50% of price and price > 2.");
         // TODO - car plate uniqueness check?
         Car storage newCar = carMap[carPlate];
         newCar.carPlate = carPlate;
@@ -109,19 +109,14 @@ contract CarRental {
         emit CarRented(carPlate, msg.sender);
     }
 
-
-
     function damageCheck() private view returns (bool) {
         uint random = uint(keccak256(abi.encodePacked(
             block.timestamp,
             block.prevrandao, // Replaced block.difficulty
             msg.sender
         ))) % 100; // A number between 0-99
-        return random < 7; // Set damage probability to 7%
+        return random < 50; // Set damage probability to 50%
     }
-
-
-
 
     function returnCar(string memory carPlate) external {
         Car storage car = carMap[carPlate];
@@ -130,31 +125,21 @@ contract CarRental {
         require(car.renterAddress == msg.sender, "You are not the renter of this car.");
         bool isDamaged = damageCheck();
 
-        // Initialize the refund amount to the deposit
         uint refundAmount = car.deposit;
         uint damageFee = 0;
 
+        // if car is damaged, reduce the refunded amount and return isDamaged back to false
+        // damage fee is 50% of the car price 
         if (isDamaged) {
-            // Calculate the damage fee as 50% of the rental price
             damageFee = car.price / 2;
             refundAmount -= damageFee;
-
-            token.transferFrom(msg.sender, wallet, damageFee);
-            car.isDamaged = true;
-            
-        } else {
-            car.isDamaged = false;
+            car.isDamaged = false;    
         }
 
-        token.transfer(msg.sender, refundAmount);
-
+        token.transferFrom(wallet, msg.sender, refundAmount);
         car.isRented = false;          
         car.renterAddress = address(0); 
 
         emit CarReturned(carPlate, msg.sender, isDamaged, refundAmount, damageFee);
     }
-
-
-
-
 }
