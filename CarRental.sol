@@ -23,10 +23,11 @@ contract CarRental {
 
     // Events for logging
     event CarAdded(string carPlate, uint256 deposit, uint256 price);
+    event CarLog(string carPlate, string message);
     event CarDetails(string carPlate, State state, uint256 deposit, uint256 price, address user);
 
-    event CarRented(string carPlate, address indexed renter);
-    event CarReturned(string carPlate, address indexed renter, bool isDamaged, uint256 refundAmount, uint256 damageFee);
+    event CarRented(string carPlate, address indexed user);
+    event CarReturned(string carPlate, address indexed user, State state, uint256 refundAmount, uint256 damageFee);
 
     constructor(ERC20 _token) {
         owner = msg.sender;
@@ -140,6 +141,7 @@ contract CarRental {
         if (isDamaged) {
             damageFee = car.price / 2;
             refundAmount -= damageFee;
+            emit CarLog(carPlate, "is damaged")
         }else{
             car.state = State.Available;
         }
@@ -148,6 +150,16 @@ contract CarRental {
         car.user = owner;
 
 
-        emit CarReturned(carPlate, msg.sender, isDamaged, refundAmount, damageFee);
+        emit CarReturned(carPlate, msg.sender, car.state, refundAmount, damageFee);
     }
-}
+
+    function fixCars() external onlyOwner{
+        require(carPlates.length > 0, "No cars are available.");
+        for (uint256 i = 0; i < carPlates.length; i++) {
+            Car storage car = carMap[carPlates[i]];
+            if(car.user == owner & car.state == State.Unavailable){
+                car.state = State.Available;
+                emit CarLog(car.carPlate, "is fixed")
+            }
+    }
+
