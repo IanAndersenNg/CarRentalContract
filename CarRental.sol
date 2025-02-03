@@ -91,14 +91,7 @@ contract CarRental {
 
     function isCarAvailable(string memory carPlate) public view carExists(carPlate) returns (bool) {
         Car storage car = carMap[carPlate];
-        bool isAvailable;
-        if(car.state == State.Available){
-            isAvailable = true;
-        }else if(car.state == State.Unavailable){
-            isAvailable = false;
-        }
-        return isAvailable;
-        // return !car.isRented;
+        return car.state == State.Available;
     }
 
     function rentCar(string memory carPlate) external carExists(carPlate) {
@@ -127,8 +120,6 @@ contract CarRental {
 
     function returnCar(string memory carPlate) external {
         Car storage car = carMap[carPlate];
-
-        // require(car.isRented, "Car is not rented.");
         require(car.user == msg.sender, "You are not the renter of this car.");
 
         bool isDamaged = damageCheck();
