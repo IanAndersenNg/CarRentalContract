@@ -101,10 +101,10 @@ contract CarRental {
 
         // transfer tokens (price + deposit) from the renter to the contract
         uint totalRental = car.deposit + car.price;
-        token.transferFrom(msg.sender, wallet, totalRental);
 
         car.state = State.Unavailable;
         car.user = msg.sender;
+        token.transferFrom(msg.sender, wallet, totalRental);
 
         emit CarRented(carPlate, msg.sender);
     }
