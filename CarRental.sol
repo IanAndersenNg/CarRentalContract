@@ -137,7 +137,8 @@ contract CarRental {
             car.state = State.Available;
         }
 
-        token.transferFrom(wallet, msg.sender, refundAmount);
+        require(token.transferFrom(wallet, msg.sender, refundAmount), "Refund failed, returning car aborted.");
+        // token.transferFrom(wallet, msg.sender, refundAmount);
         car.user = owner;
 
 
