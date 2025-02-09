@@ -64,7 +64,6 @@ contract CarRental {
         uint256 price
     ) external onlyOwner {
         require(price > 2 && deposit > price / 2, "Car deposit must be larger than 50% of price and price > 2.");
-        // TODO - car plate uniqueness check?
         Car storage newCar = carMap[carPlate];
         newCar.carPlate = carPlate;
         newCar.deposit = deposit;
