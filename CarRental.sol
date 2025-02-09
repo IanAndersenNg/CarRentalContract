@@ -123,7 +123,6 @@ contract CarRental {
         require(car.user == msg.sender, "You are not the renter of this car.");
 
         bool isDamaged = damageCheck();
-
         uint refundAmount = car.deposit;
         uint damageFee = 0;
 
@@ -133,14 +132,12 @@ contract CarRental {
             damageFee = car.price / 2;
             refundAmount -= damageFee;
             emit CarLog(carPlate, "is damaged");
-        }else{
+        } else{
             car.state = State.Available;
         }
 
-        require(token.transferFrom(wallet, msg.sender, refundAmount), "Refund failed, returning car aborted.");
-        // token.transferFrom(wallet, msg.sender, refundAmount);
         car.user = owner;
-
+        require(token.transferFrom(wallet, msg.sender, refundAmount), "Refund failed, returning car aborted.");
 
         emit CarReturned(carPlate, msg.sender, car.state, refundAmount, damageFee);
     }
